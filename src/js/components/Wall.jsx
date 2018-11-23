@@ -13,6 +13,8 @@ const WallPanel = (props) => {
 		));
 	}
 	const rows = [];
+	let solution = (props.found.length == 4) ?
+		props.data.groups[props.found[props.index]].solution : '';
 	for (let i = 0; i < 4; i++) {
 		const cols = [];
 		for (let j = 0; j < 4; j++) {
@@ -80,7 +82,7 @@ const WallPanel = (props) => {
 			<div className={`col${props.isRevealed ? '' : ' invisible'}`} style={{
 				color: 'midnightblue'
 			}}>
-				<h3>{props.data.groups[props.index].solution}</h3>
+				<h3>{solution}</h3>
 			</div>
 		</div>
 	);
