@@ -1,7 +1,7 @@
 {
   "name": "pi-connect",
   "version": "0.1.0",
-  "description": "Make your own only connect!",
+  "description": "Host your own Only Connect game!",
   "main": "src/index.js",
   "scripts": {
     "start": "webpack-dev-server --open --mode development",
@@ -25,5 +25,6 @@
     "webpack": "^4.26.0",
     "webpack-cli": "^3.1.2",
     "webpack-dev-server": "^3.1.10"
-  }
+  },
+  "repository": "git@github.com:krawthekrow/pi-connect.git"
 }
