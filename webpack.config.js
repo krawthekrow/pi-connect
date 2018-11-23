@@ -14,6 +14,15 @@ module.exports = {
 			use: [{
 				loader: 'html-loader'
 			}]
+		}, {
+			test: /\.ttf$/,
+			use: [{
+				loader: 'file-loader',
+				options: {
+					name: '[name].[ext]',
+					outputPath: 'fonts/'
+				}
+			}]
 		}]
 	},
 	plugins: [

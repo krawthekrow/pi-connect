@@ -682,12 +682,12 @@ class Main extends Component {
 					<button type="button" className={`btn btn-md btn-primary py-0${leftRightDisabled ? ' disabled' : ''}`} onClick={this.handleLeft}>
 						<span style={{
 							fontSize: '20px'
-						}}>{'\u2bc7'}</span>
+						}}>{'\u25c4'}</span>
 					</button>
 					<button type="button" className={`btn btn-md btn-info py-0${leftRightDisabled ? ' disabled' : ''}`} onClick={this.handleRight}>
 						<span style={{
 							fontSize: '20px'
-						}}>{'\u2bc8'}</span>
+						}}>{'\u25ba'}</span>
 					</button>
 				</div>
 			) : (

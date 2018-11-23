@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
+import GardinerFont from '../../fonts/Gardiner-reduced.ttf';
 
 const ChoosePanel = (props) => {
 	const rows = [];
@@ -23,7 +24,8 @@ const ChoosePanel = (props) => {
 					backgroundColor: 'navy'
 				}}>
 					<h1 style={{
-						fontSize: '100px'
+						fontSize: '100px',
+						fontFamily: 'Gardiner'
 					}}>{ChoosePanel.HIEROGLYPHS[index]}</h1>
 				</button>
 			</div>
