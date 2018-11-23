@@ -1,15 +1,17 @@
 {
   "name": "pi-connect",
   "version": "0.1.0",
-  "description": "make your own only connect",
+  "description": "Make your own only connect!",
   "main": "src/index.js",
   "scripts": {
-  	"start": "webpack-dev-server --open --mode development",
+    "start": "webpack-dev-server --open --mode development",
     "build": "webpack --mode production"
   },
   "author": "krawthekrow",
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "immutability-helper": "^2.8.1"
+  },
   "devDependencies": {
     "@babel/core": "^7.1.6",
     "@babel/preset-env": "^7.1.6",
