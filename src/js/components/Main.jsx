@@ -28,10 +28,10 @@ class Main extends Component {
 		this.state = {
 			game: parseGame(SAMPLE_GAME),
 			teams: [{
-				name: 'The Terminators',
+				name: 'Enter Team Name',
 				score: '0'
 			}, {
-				name: 'The Cat Lovers',
+				name: 'Enter Team Name',
 				score: '0'
 			}],
 			state: {
@@ -219,7 +219,7 @@ class Main extends Component {
 						}
 					});
 				}
-				const strikes = 
+				const strikes =
 					(state.state.found.length == 2) ?
 						(state.state.strikes + 1)
 					: state.state.strikes;
@@ -268,6 +268,8 @@ class Main extends Component {
 				(substage == 'main' || substage == 'secondary')
 			: (stage == 'wall') ?
 				(substage == 'connections')
+			: (stage == 'vowels') ?
+				!this.state.state.isRevealed
 			: false;
 	}
 	getLeftRightEnabled() {
@@ -371,8 +373,10 @@ class Main extends Component {
 					}
 				});
 			}
-			const newSubstage = (stage == 'wall' && substage == 'idle') ?
-				'connections' : substage;
+			const newSubstage =
+				(stage == 'wall' && substage == 'idle') ? 'connections'
+				: (stage == 'vowels') ? 'main'
+				: substage;
 			const newIndex = (state.state.index + 1) % 4;
 			const newPuzzleIndex = (state.state.index == 3) ?
 				state.state.puzzleIndex + 1 : state.state.puzzleIndex;
@@ -447,7 +451,7 @@ class Main extends Component {
 				const advanceTurn = state.state.substage == 'main';
 				const turn = advanceTurn ?
 					((state.state.turn + 1) % 2) : state.state.turn;
-				const afterInc = 
+				const afterInc =
 					Main.IncStateScore(state, state.state.turn,
 						Mechanics.IndexToPoints(state.state.index));
 				return update(
@@ -465,13 +469,24 @@ class Main extends Component {
 				let inc = 1;
 				if (state.state.index == 3 && state.state.wallPoints == 7)
 					inc += 2;
-				const afterInc = 
+				const afterInc =
 					Main.IncStateScore(state, state.state.turn, inc);
 				return update(afterInc, {
 					state: {
 						substage: { $set: 'idle' },
 						isRevealed: { $set: true },
 						wallPoints: { $set: state.state.wallPoints + 1 }
+					}
+				});
+			});
+		else if (stage == 'vowels')
+			this.setState((state) => {
+				const afterInc =
+					Main.IncStateScore(state, state.state.turn, 1);
+				return update(afterInc, {
+					state: {
+						substage: { $set: 'idle' },
+						isRevealed: { $set: true }
 					}
 				});
 			});
@@ -507,6 +522,22 @@ class Main extends Component {
 					}
 				});
 			});
+		else if (stage == 'vowels')
+			this.setState((state) => {
+				const isBuzzed = state.state.substage == 'buzzed';
+				const afterInc =
+					Main.IncStateScore(state, state.state.turn,
+						isBuzzed ? -1 : 0);
+				const turn = (state.state.turn + 1) % 2;
+				const substage = isBuzzed ? 'secondary' : 'idle';
+				return update(afterInc, {
+					state: {
+						turn: { $set: turn },
+						substage: { $set: substage },
+						isRevealed: { $set: !isBuzzed }
+					}
+				});
+			});
 		else
 			console.error(`Unrecognized stage ${stage}`);
 	}
@@ -515,11 +546,12 @@ class Main extends Component {
 		if (!this.getLeftRightEnabled())
 			return;
 		this.setState((state) => {
-			const afterInc = 
+			const afterInc =
 				Main.IncStateScore(state, 0, 1);
-			return update(afterInc, {
+			return update(state, {
 				state: {
-					isRevealed: { $set: true },
+					turn: { $set: 0 },
+					substage: { $set: 'buzzed' }
 				}
 			});
 		});
@@ -529,11 +561,10 @@ class Main extends Component {
 		if (!this.getLeftRightEnabled())
 			return;
 		this.setState((state) => {
-			const afterInc = 
-				Main.IncStateScore(state, 1, 1);
-			return update(afterInc, {
+			return update(state, {
 				state: {
-					isRevealed: { $set: true },
+					turn: { $set: 1 },
+					substage: { $set: 'buzzed' }
 				}
 			});
 		});
@@ -600,9 +631,14 @@ class Main extends Component {
 	}
 	render() {
 		const teamCards = [];
+		const state = this.state.state;
+		const stage = state.stage;
+		const substage = state.substage;
 		for (let i = 0; i < 2; i++) {
-			const glow = this.state.state.stage != 'vowels' &&
-				i == this.state.state.turn;
+			const glow =
+				!(stage == 'vowels' &&
+					(substage == 'main' || substage == 'idle')) &&
+				i == state.turn;
 			teamCards.push(<TeamCard key={i} name={this.state.teams[i].name} score={this.state.teams[i].score} isOnRight={i == 1} glow={glow} onNameChange={this.teamNameChangeCallbacks[i]} onScoreChange={this.teamScoreChangeCallbacks[i]} onScoreInc={this.teamScoreIncCallbacks[i]} />);
 		}
 		const timer = this.state.state.timer;
@@ -618,9 +654,6 @@ class Main extends Component {
 				Start
 			</button>;
 
-		const state = this.state.state;
-		const stage = state.stage;
-		const substage = state.substage;
 		const chooseHeader =
 			(stage == 'connections') ? 'Connections'
 			: (stage == 'sequences') ? 'Sequences'
@@ -644,7 +677,7 @@ class Main extends Component {
 		const correctWrongDisabled = !this.getCorrectWrongEnabled();
 		const leftRightDisabled = !this.getLeftRightEnabled();
 		const correctWrongButtons =
-			(stage == 'vowels') ? (
+			(stage == 'vowels' && substage == 'main') ? (
 				<div className="btn-group mr-2">
 					<button type="button" className={`btn btn-md btn-primary py-0${leftRightDisabled ? ' disabled' : ''}`} onClick={this.handleLeft}>
 						<span style={{
