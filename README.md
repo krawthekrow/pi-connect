@@ -43,6 +43,8 @@ In the guessing connections stage, hit the "Correct" or "Wrong" buttons if the t
 
 Then, hit the "Next" button to go to the next group. Once again, the "Next" button is completely unrelated to the "Back" button, which brings you back to the selection screen.
 
+If a team finds all the groups and gets all the connections right, they will be awarded two extra points, just as in Only Connect.
+
 As before, you can hit "Reveal" at any time to reveal or un-reveal the solution to the current connection.
 
 Vowels

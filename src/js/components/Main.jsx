@@ -716,6 +716,9 @@ class Main extends Component {
 									<p className="px-1">
 										Use <a href="https://github.com/krawthekrow/pi-connect-maker">pi-connect-maker</a> to generate a game file, and read the <a href="https://github.com/krawthekrow/pi-connect">Github README</a> to learn how to use this web app!
 									</p>
+									<p className="px-1">
+										You can also just click "Done" and play around, but only sample clues will be used.
+									</p>
 								</div>
 							</div>
 							<div className="form-group row w-100">
