@@ -243,8 +243,8 @@ class Main extends Component {
 			const newChosen = state.state.chosen.slice(0);
 			if (!state.state.chosen.includes(index))
 				newChosen.push(index);
-			const timeout = state.state.stage == 'connections' ?
-				CONNECTIONS_TIMEOUT : WALL_TIMEOUT;
+			const timeout = state.state.stage == 'wall' ?
+				WALL_TIMEOUT : CONNECTIONS_TIMEOUT;
 			return update(
 				Main.ResetStateMicro(state, timeout), {
 				state: {
