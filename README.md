@@ -1,6 +1,6 @@
 A game engine to run Only Connect games! Very much inspired by, but not affiliated with Only Connect. This is not intended to be an exact replica of Only Connect, but a simple framework to host games in a party-like setting.
 
-Go to [https://krawthekrow.github.io/pi-connect/](https://krawthekrow.github.io/pi-connect/) to check it out! You do not need to fork this repository to use it. It starts out with no game data loaded, so you will need to use [pi-connect-maker](https://github.com/krawthekrow/pi-connect-maker) to generate the game configuration file and upload it using the "Config" button.
+Check it out at [https://krawthekrow.github.io/pi-connect/](https://krawthekrow.github.io/pi-connect/)! You do not need to fork this repository to use it. It starts out with no game data loaded, so you will need to use [pi-connect-maker](https://github.com/krawthekrow/pi-connect-maker) to generate the game configuration file and upload it using the "Config" button.
 
 The controls for the game master can be rather unintuitive, if you've had experience with user interfaces I'd gladly take suggestions for improvement. The following documentation describes the controls in detail.
 

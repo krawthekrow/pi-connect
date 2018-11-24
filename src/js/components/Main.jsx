@@ -51,7 +51,7 @@ class Main extends Component {
 				// choose-specific
 				chosen: []
 			},
-			showConfig: false
+			showConfig: true
 		};
 
 		this.timerInput = React.createRef();
@@ -711,6 +711,13 @@ class Main extends Component {
 				<div className="modal-dialog modal-dialog-centered">
 					<div className="modal-content">
 						<div className="modal-body">
+							<div className="row w-100">
+								<div className="col text-left">
+									<p className="px-1">
+										Use <a href="https://github.com/krawthekrow/pi-connect-maker">pi-connect-maker</a> to generate a game file, and read the <a href="https://github.com/krawthekrow/pi-connect">Github README</a> to learn how to use this web app!
+									</p>
+								</div>
+							</div>
 							<div className="form-group row w-100">
 								<label className="col-4 mb-0">
 									New Game File:
