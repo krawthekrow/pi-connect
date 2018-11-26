@@ -9,10 +9,10 @@ const VowelsPanel = (props) => {
 	return [
 		<div key="tiles" className="row flex-fill">
 			<div className="col d-flex flex-column justify-content-center">
-				<div>
+				<div className="container">
 					<h3 className="text-muted">{props.data.desc}</h3>
 				</div>
-				<div>
+				<div className={`container${props.showPuzzle ? '' : ' invisible'}`}>
 					<h1>{text}</h1>
 				</div>
 			</div>
@@ -21,6 +21,7 @@ const VowelsPanel = (props) => {
 };
 VowelsPanel.propTypes = {
 	data: PropTypes.instanceOf(VowelsData).isRequired,
+	showPuzzle: PropTypes.bool.isRequired,
 	index: PropTypes.number.isRequired,
 	isRevealed: PropTypes.bool.isRequired
 };

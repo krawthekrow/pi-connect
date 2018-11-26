@@ -269,11 +269,15 @@ class Main extends Component {
 			: (stage == 'wall') ?
 				(substage == 'connections')
 			: (stage == 'vowels') ?
-				!this.state.state.isRevealed
+				((substage == 'main' ||
+				substage == 'buzzed' ||
+				substage == 'secondary' )
+					&& !this.state.state.isRevealed)
 			: false;
 	}
 	getLeftRightEnabled() {
-		return !this.state.state.isRevealed;
+		return (this.state.state.substage == 'main') &&
+			!this.state.state.isRevealed;
 	}
 	getRevealEnabled() {
 		const state = this.state.state;
@@ -359,7 +363,7 @@ class Main extends Component {
 					: (stage == 'wall') ? 'vowels'
 					: stage;
 				const newSubstage =
-					(newStage == 'vowels') ? 'main' : substage;
+					(newStage == 'vowels') ? 'category' : substage;
 				const newTimer = (newStage == 'vowels') ?
 					new TimerUI(VOWELS_TIMEOUT) : state.state.timer;
 				if (newStage == 'vowels')
@@ -373,19 +377,35 @@ class Main extends Component {
 					}
 				});
 			}
+			if (stage == 'vowels') {
+				if (substage == 'category')
+					return update(state, {
+						state: {
+							substage: { $set: 'main' }
+						}
+					});
+				if (state.state.index == 3)
+					return update(state, {
+						state: {
+							substage: { $set: 'category' },
+							isRevealed: { $set: false },
+							index: { $set: 0 },
+							puzzleIndex: {
+								$set: state.state.puzzleIndex + 1
+							}
+						}
+					});
+			}
 			const newSubstage =
 				(stage == 'wall' && substage == 'idle') ? 'connections'
 				: (stage == 'vowels') ? 'main'
 				: substage;
 			const newIndex = (state.state.index + 1) % 4;
-			const newPuzzleIndex = (state.state.index == 3) ?
-				state.state.puzzleIndex + 1 : state.state.puzzleIndex;
 			return update(state, {
 				state: {
 					substage: { $set: newSubstage },
 					isRevealed: { $set: false },
 					index: { $set: newIndex },
-					puzzleIndex: { $set: newPuzzleIndex }
 				}
 			});
 		});
@@ -637,7 +657,9 @@ class Main extends Component {
 		for (let i = 0; i < 2; i++) {
 			const glow =
 				!(stage == 'vowels' &&
-					(substage == 'main' || substage == 'idle')) &&
+					(substage == 'category' ||
+					substage == 'main' ||
+					substage == 'idle')) &&
 				i == state.turn;
 			teamCards.push(<TeamCard key={i} name={this.state.teams[i].name} score={this.state.teams[i].score} isOnRight={i == 1} glow={glow} onNameChange={this.teamNameChangeCallbacks[i]} onScoreChange={this.teamScoreChangeCallbacks[i]} onScoreInc={this.teamScoreIncCallbacks[i]} />);
 		}
@@ -671,13 +693,14 @@ class Main extends Component {
 					stage == 'sequences') ?
 				<ConnectionsPanel data={this.state.game[stage][state.puzzleIndex]} index={state.index} progressVal={progressVal} isRevealed={state.isRevealed} isActive={isActive} />
 			: (stage == 'vowels') ?
-				<VowelsPanel data={this.state.game.vowels[state.puzzleIndex]} index={state.index} isRevealed={state.isRevealed} />
+				<VowelsPanel data={this.state.game.vowels[state.puzzleIndex]} index={state.index} isRevealed={state.isRevealed} showPuzzle={state.substage != 'category'} />
 			: null;
 
 		const correctWrongDisabled = !this.getCorrectWrongEnabled();
 		const leftRightDisabled = !this.getLeftRightEnabled();
 		const correctWrongButtons =
-			(stage == 'vowels' && substage == 'main') ? (
+			(stage == 'vowels' &&
+				(substage == 'main' || substage == 'category')) ? (
 				<div className="btn-group mr-2">
 					<button type="button" className={`btn btn-md btn-primary py-0${leftRightDisabled ? ' disabled' : ''}`} onClick={this.handleLeft}>
 						<span style={{
