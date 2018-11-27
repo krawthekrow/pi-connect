@@ -33,9 +33,12 @@ const WallPanel = (props) => {
 			const btnText =
 				props.data.groups[Math.trunc(index / 4)].data[index % 4];
 			const disabled = props.found.length == 4 && props.index != i;
+			const btnStyle = disabled ? {
+				opacity: '.3'
+			} : {};
 			cols.push(
 			<div key={j} className="col d-flex justify-content-center align-items-center px-0">
-				<button type="button" className={`btn btn-lg w-100 h-100 ${btnColor}${disabled ? ' disabled' : ''}`} onClick={handleClick}>
+				<button type="button" className={`btn btn-lg w-100 h-100 ${btnColor}${disabled ? ' disabled' : ''}`} onClick={handleClick} style={btnStyle}>
 					<h2 className="mb-0">{btnText}</h2>
 				</button>
 			</div>
