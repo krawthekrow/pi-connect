@@ -3,13 +3,14 @@ import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import update from 'immutability-helper';
 import TeamCard from './TeamCard.jsx';
-import TimerUI from './TimerUI.jsx';
+import TimerUI from '../game/TimerUI.jsx';
 import ConnectionsPanel from './Connections.jsx';
 import ChoosePanel from './Choose.jsx';
 import WallPanel from './Wall.jsx';
 import VowelsPanel from './Vowels.jsx';
 import GameData from '../game/GameData.js';
 import Mechanics from '../game/Mechanics.js';
+import GameState from '../game/GameState.js';
 import SAMPLE_GAME from '../game/SampleGame.js';
 
 const CONNECTIONS_TIMEOUT = 40 * 1000;
@@ -26,34 +27,10 @@ class Main extends Component {
 		super(props);
 
 		this.state = {
-			game: parseGame(SAMPLE_GAME),
-			teams: [{
-				name: 'Enter Team Name',
-				score: '0'
-			}, {
-				name: 'Enter Team Name',
-				score: '0'
-			}],
-			state: {
-				timer: new TimerUI(0),
-				turn: 0,
-				stage: 'connections',
-				substage: 'choose',
-				puzzleIndex: 0,
-				index: 0,
-				isRevealed: false,
-				// wall-specific
-				strikes: 0,
-				selected: [],
-				found: [],
-				wallPoints: 0,
-				wrongGuessPenalty: null,
-				// choose-specific
-				chosen: []
-			},
-			showConfig: true
+			game: new GameState(parseGame(SAMPLE_GAME)),
+			showConfig: true,
+			coinToss: null
 		};
-
 		this.timerInput = React.createRef();
 
 		this.teamNameChangeCallbacks = [];
@@ -70,6 +47,7 @@ class Main extends Component {
 				this.handleTeamScoreInc(i, newVal);
 			});
 		}
+		this.handleCoinToss = this.handleCoinToss.bind(this);
 		this.onFrame = this.onFrame.bind(this);
 		this.handleWallClick = this.handleWallClick.bind(this);
 		this.handleChooseClick = this.handleChooseClick.bind(this);
@@ -77,6 +55,7 @@ class Main extends Component {
 		this.handleTimerStart = this.handleTimerStart.bind(this);
 		this.handleTimerStop = this.handleTimerStop.bind(this);
 		this.handleTimerReset = this.handleTimerReset.bind(this);
+		this.handlePrev = this.handlePrev.bind(this);
 		this.handleNext = this.handleNext.bind(this);
 		this.handleBack = this.handleBack.bind(this);
 		this.handleCorrect = this.handleCorrect.bind(this);
@@ -93,528 +72,126 @@ class Main extends Component {
 		window.requestAnimationFrame(this.onFrame);
 	}
 	onFrame() {
-		this.setState((state) => update(state, {
-			state: { timer: { currTime: { $set: new Date().getTime() } } }
-		}));
-		this.setState((state) => {
-			const timer = state.state.timer;
-			if (!(timer.isRunning() && timer.isExpired()))
-				return state;
-			return update(Main.StopStateTimer(state), {
-				state: {
-					selected: { $set: [] }
-				}
-			});
-		});
-		this.setState((state) => {
-			if (state.state.wrongGuessPenalty == null)
-				return state;
-			const timeDiff = new Date().getTime() -
-				state.state.wrongGuessPenalty;
-			if (timeDiff < WALL_WRONG_GUESS_TIMEOUT)
-				return state;
-			return update(state, {
-				state: {
-					selected: { $set: [] },
-					wrongGuessPenalty: { $set: null }
-				}
-			});
-		});
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getUpdateCurrTime()
+			.getUpdateTimer().getUpdateWrongGuessPenalty()
+		}}));
 		window.requestAnimationFrame(this.onFrame);
 	}
-	handleTeamNameChange(teamId, newVal) {
+	tossCoin() {
 		this.setState((state) => update(state, {
-			teams: { [teamId]: { name: { $set: newVal } } }
+			coinToss: { $set: Math.floor(Math.random() * 2) == 0 }
 		}));
 	}
-	static IncStateScore(state, teamId, inc) {
-		const currScore = parseInt(state.teams[teamId].score);
-		if (isNaN(currScore))
-			return state;
-		const newScore = (currScore + inc).toString();
-		return update(state, {
-			teams: { [teamId]: { score: { $set: newScore } } }
-		});
+	handleCoinToss(e) {
+		e.target.blur();
+		this.tossCoin();
 	}
-	static StopStateTimer(state) {
-		if (!state.state.timer.isRunning())
-			return state;
-		return update(state, {
-			state: { timer: { stop: { $set: new Date().getTime() } } }
-		});
-	}
-	static ResetStateMicro(state, timeout) {
-		return update(state, {
-			state: {
-				timer: { $set: new TimerUI(timeout) },
-				index: { $set: 0 },
-				isRevealed: { $set: false },
-				// wall-specific
-				strikes: { $set: 0 },
-				selected: { $set: [] },
-				found: { $set: [] },
-				wallPoints: { $set: 0 },
-				wrongGuessPenalty: { $set: null }
-			}
-		});
+	handleTeamNameChange(teamId, newVal) {
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getChangeTeamName(teamId, newVal)
+		}}));
 	}
 	handleTeamScoreChange(teamId, newVal) {
-		this.setState((state) => update(state, {
-			teams: { [teamId]: { score: { $set: newVal } } }
-		}));
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getChangeScore(teamId, newVal)
+		}}));
 	}
 	handleTeamScoreInc(teamId, inc) {
-		this.setState((state) =>
-			Main.IncStateScore(state, teamId, inc));
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getIncScore(teamId, inc)
+		}}));
 	}
 	handleWallClick(index) {
-		const state = this.state.state;
-		if (state.found.includes(Math.trunc(index / 4)))
-			return;
-		if (state.wrongGuessPenalty != null)
-			return;
-		if (state.strikes == 3)
-			return;
-		if (state.timer.isExpired())
-			return;
-		this.setState((state) => {
-			const selected = state.state.selected;
-			const arrPos = selected.indexOf(index);
-			const newSelected = selected.slice(0);
-			if (arrPos == -1)
-				newSelected.push(index);
-			else
-				newSelected.splice(arrPos, 1);
-			if (newSelected.length == 4) {
-				const group = Math.trunc(newSelected[0] / 4);
-				const correct = newSelected.every((val) => (
-					Math.trunc(val / 4) == group));
-				if (correct) {
-					const newFound = state.state.found.slice(0);
-					newFound.push(group);
-					if (newFound.length == 3) {
-						// find remaining group
-						let remainder = 0;
-						for (let i = 0; i < 4; i++)
-							remainder ^= i;
-						for (let i = 0; i < 3; i++)
-							remainder ^= newFound[i];
-						newFound.push(remainder);
-					}
-					const done = newFound.length == 4;
-					const substage = done ?
-						'connections' : state.state.substage;
-					const inc = newFound.length - state.state.found.length;
-					const afterInc = Main.IncStateScore(state,
-						state.state.turn, inc);
-					return update(
-						done ? Main.StopStateTimer(afterInc) : afterInc, {
-						state: {
-							substage: { $set: substage },
-							selected: { $set: [] },
-							found: { $set: newFound },
-							wallPoints: {
-								$set: state.state.wallPoints + inc
-							}
-						}
-					});
-				}
-				const strikes =
-					(state.state.found.length == 2) ?
-						(state.state.strikes + 1)
-					: state.state.strikes;
-				const done = strikes == 3;
-				return update(
-					done ? Main.StopStateTimer(state) : state, {
-					state: {
-						strikes: { $set: strikes },
-						selected: { $set: newSelected },
-						wrongGuessPenalty: { $set: new Date().getTime() }
-					}
-				});
-			}
-			return update(state, {
-				state: { selected: { $set: newSelected } }
-			});
-		});
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getWallClick(index)
+		}}));
 	}
 	handleChooseClick(index) {
-		this.setState((state) => {
-			const newChosen = state.state.chosen.slice(0);
-			if (!state.state.chosen.includes(index))
-				newChosen.push(index);
-			const timeout = state.state.stage == 'wall' ?
-				WALL_TIMEOUT : CONNECTIONS_TIMEOUT;
-			return update(
-				Main.ResetStateMicro(state, timeout), {
-				state: {
-					timer: {
-						start: { $set: new Date().getTime() }
-					},
-					substage: { $set: 'main' },
-					puzzleIndex: { $set: index },
-					chosen: { $set: newChosen }
-				}
-			});
-		});
-	}
-	stopTimer() {
-		this.setState((state) => Main.StopStateTimer(state));
-	}
-	getCorrectWrongEnabled() {
-		const stage = this.state.state.stage;
-		const substage = this.state.state.substage;
-		return (stage == 'connections' || stage == 'sequences') ?
-				(substage == 'main' || substage == 'secondary')
-			: (stage == 'wall') ?
-				(substage == 'connections')
-			: (stage == 'vowels') ?
-				((substage == 'main' ||
-				substage == 'buzzed' ||
-				substage == 'secondary' )
-					&& !this.state.state.isRevealed)
-			: false;
-	}
-	getLeftRightEnabled() {
-		return (this.state.state.substage == 'main') &&
-			!this.state.state.isRevealed;
-	}
-	getRevealEnabled() {
-		const state = this.state.state;
-		return state.substage != 'choose';
-	}
-	getBackEnabled() {
-		const stage = this.state.state.stage;
-		const substage = this.state.state.substage;
-		const backAllowed =
-			substage != 'choose' ||
-			stage != 'connections';
-		return backAllowed;
-	}
-	getNextEnabled() {
-		const stage = this.state.state.stage;
-		const substage = this.state.state.substage;
-		const nextAllowed =
-			!(stage == 'wall' && substage == 'main');
-		if (!nextAllowed)
-			return false;
-		const index = this.state.state.index;
-		const puzzleIndex = this.state.state.puzzleIndex;
-		if (stage != 'vowels')
-			return index < 3;
-		return index < 3 ||
-			puzzleIndex < this.state.game.vowels.length - 1;
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getChoose(index)
+		}}));
 	}
 	handleTimerChange(e) {
 		const newVal = e.target.value;
 		const isValid = TimerUI.ParseText(newVal) != null;
 		e.target.setCustomValidity(isValid ? '' : 'Bad timer value.');
-		this.setState((state) => update(state, {
-			state: { timer: { text: { $set: newVal } } }
-		}));
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getChangeTimer(newVal)
+		}}));
 	}
 	handleTimerStart(e) {
 		e.target.blur();
-		if (!this.state.state.timer.isValid())
-			return;
-		this.setState((state) => {
-			const timeUsed = this.state.state.timer.getTimeUsed();
-			if (timeUsed == null) {
-				console.error('Time used null.');
-				return state;
-			}
-			const newStart = new Date().getTime() - timeUsed;
-			return update(state, {
-				state: { timer: {
-					text: { $set: null },
-					stop: { $set: null },
-					start: { $set: newStart }
-				} }
-			});
-		});
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getStartTimer()
+		}}));
 	}
 	handleTimerStop(e) {
 		e.target.blur();
-		this.stopTimer();
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getStopTimer()
+		}}));
 	}
 	handleTimerReset(e) {
 		e.target.blur();
 		this.timerInput.current.setCustomValidity('');
-		const currTime = new Date().getTime();
-		this.setState((state) => update(state, {
-			state: { timer: {
-				text: { $set: null },
-				stop: { $set: currTime },
-				start: { $set: currTime }
-			} }
-		}));
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getResetTimer()
+		}}));
+	}
+	handlePrev(e) {
+		e.target.blur();
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getPrev()
+		}}));
 	}
 	handleNext(e) {
 		e.target.blur();
-		if (!this.getNextEnabled())
-			return;
-		this.setState((state) => {
-			const stage = state.state.stage;
-			const substage = state.state.substage;
-			if (substage == 'choose') {
-				const newStage =
-					(stage == 'connections') ? 'sequences'
-					: (stage == 'sequences') ? 'wall'
-					: (stage == 'wall') ? 'vowels'
-					: stage;
-				const newSubstage =
-					(newStage == 'vowels') ? 'category' : substage;
-				const newTimer = (newStage == 'vowels') ?
-					new TimerUI(VOWELS_TIMEOUT) : state.state.timer;
-				if (newStage == 'vowels')
-					newTimer.start = new Date().getTime();
-				return update(state, {
-					state: {
-						timer: { $set: newTimer },
-						stage: { $set: newStage },
-						substage: { $set: newSubstage },
-						chosen: { $set: [] }
-					}
-				});
-			}
-			if (stage == 'vowels') {
-				if (substage == 'category')
-					return update(state, {
-						state: {
-							substage: { $set: 'main' }
-						}
-					});
-				if (state.state.index == 3)
-					return update(state, {
-						state: {
-							substage: { $set: 'category' },
-							isRevealed: { $set: false },
-							index: { $set: 0 },
-							puzzleIndex: {
-								$set: state.state.puzzleIndex + 1
-							}
-						}
-					});
-			}
-			const newSubstage =
-				(stage == 'wall' && substage == 'idle') ? 'connections'
-				: (stage == 'vowels') ? 'main'
-				: substage;
-			const newIndex = (state.state.index + 1) % 4;
-			return update(state, {
-				state: {
-					substage: { $set: newSubstage },
-					isRevealed: { $set: false },
-					index: { $set: newIndex },
-				}
-			});
-		});
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getNext()
+		}}));
 	}
 	handleBack(e) {
 		e.target.blur();
-		if (!this.getBackEnabled())
-			return;
-		this.setState((state) => {
-			const stage = state.state.stage;
-			const substage = state.state.substage;
-			if (stage == 'vowels') {
-				return update(
-					Main.ResetStateMicro(state, 0), {
-					state: {
-						stage: { $set: 'wall' },
-						substage: { $set: 'choose' },
-						puzzleIndex: { $set: 0 }
-					}
-				});
-			}
-			if (substage == 'choose') {
-				const newStage =
-					(stage == 'sequences') ? 'connections'
-					: (stage == 'wall') ? 'sequences'
-					: stage;
-				return update(state, {
-					state: {
-						stage: { $set: newStage },
-						substage: { $set: 'choose' },
-						chosen: { $set: [] }
-					}
-				});
-			}
-			const advanceTurn = stage == 'wall';
-			const turn = advanceTurn ?
-				((state.state.turn + 1) % 2) : state.state.turn;
-			return update(
-				Main.ResetStateMicro(state, 0), {
-				state: {
-					turn: { $set: turn },
-					substage: { $set: 'choose' },
-					puzzleIndex: { $set: 0 }
-				}
-			});
-		});
-	}
-	handleTurn(e) {
-		e.target.blur();
-		this.setState((state) => update(state, {
-			state: {
-				turn: { $set: (state.state.turn + 1) % 2 }
-			}
-		}));
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getBack()
+		}}));
 	}
 	handleCorrect(e) {
 		e.target.blur();
-		if (!this.getCorrectWrongEnabled())
-			return;
-		const stage = this.state.state.stage;
-		if (stage == 'connections' || stage == 'sequences')
-			this.setState((state) => {
-				const advanceTurn = state.state.substage == 'main';
-				const turn = advanceTurn ?
-					((state.state.turn + 1) % 2) : state.state.turn;
-				const afterInc =
-					Main.IncStateScore(state, state.state.turn,
-						Mechanics.IndexToPoints(state.state.index));
-				return update(
-					Main.StopStateTimer(afterInc), {
-					state: {
-						turn: { $set: turn },
-						isRevealed: { $set: true },
-						index: { $set: 3 },
-						substage: { $set: 'idle' }
-					}
-				});
-			});
-		else if (stage == 'wall')
-			this.setState((state) => {
-				let inc = 1;
-				if (state.state.index == 3 && state.state.wallPoints == 7)
-					inc += 2;
-				const afterInc =
-					Main.IncStateScore(state, state.state.turn, inc);
-				return update(afterInc, {
-					state: {
-						substage: { $set: 'idle' },
-						isRevealed: { $set: true },
-						wallPoints: { $set: state.state.wallPoints + 1 }
-					}
-				});
-			});
-		else if (stage == 'vowels')
-			this.setState((state) => {
-				const afterInc =
-					Main.IncStateScore(state, state.state.turn, 1);
-				return update(afterInc, {
-					state: {
-						substage: { $set: 'idle' },
-						isRevealed: { $set: true }
-					}
-				});
-			});
-		else
-			console.error(`Unrecognized stage ${stage}`);
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getCorrect()
+		}}));
 	}
 	handleWrong(e) {
 		e.target.blur();
-		if (!this.getCorrectWrongEnabled())
-			return;
-		const stage = this.state.state.stage;
-		if (stage == 'connections' || stage == 'sequences')
-			this.setState((state) => {
-				const mainStage = state.state.substage == 'main';
-				const turn = mainStage ?
-					((state.state.turn + 1) % 2) : state.state.turn;
-				const substage = mainStage ? 'secondary' : 'idle';
-				return update(Main.StopStateTimer(state), {
-					state: {
-						turn: { $set: turn },
-						index: { $set: 3 },
-						substage: { $set: substage },
-						isRevealed: { $set: substage == 'idle' }
-					}
-				});
-			});
-		else if (stage == 'wall')
-			this.setState((state) => {
-				return update(state, {
-					state: {
-						substage: { $set: 'idle' },
-						isRevealed: { $set: true },
-					}
-				});
-			});
-		else if (stage == 'vowels')
-			this.setState((state) => {
-				const isBuzzed = state.state.substage == 'buzzed';
-				const afterInc =
-					Main.IncStateScore(state, state.state.turn,
-						isBuzzed ? -1 : 0);
-				const turn = (state.state.turn + 1) % 2;
-				const substage = isBuzzed ? 'secondary' : 'idle';
-				return update(afterInc, {
-					state: {
-						turn: { $set: turn },
-						substage: { $set: substage },
-						isRevealed: { $set: !isBuzzed }
-					}
-				});
-			});
-		else
-			console.error(`Unrecognized stage ${stage}`);
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getWrong()
+		}}));
 	}
 	handleLeft(e) {
 		e.target.blur();
-		if (!this.getLeftRightEnabled())
-			return;
-		this.setState((state) => {
-			const afterInc =
-				Main.IncStateScore(state, 0, 1);
-			return update(state, {
-				state: {
-					turn: { $set: 0 },
-					substage: { $set: 'buzzed' }
-				}
-			});
-		});
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getBuzz(0)
+		}}));
 	}
 	handleRight(e) {
 		e.target.blur();
-		if (!this.getLeftRightEnabled())
-			return;
-		this.setState((state) => {
-			return update(state, {
-				state: {
-					turn: { $set: 1 },
-					substage: { $set: 'buzzed' }
-				}
-			});
-		});
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getBuzz(1)
+		}}));
 	}
 	handleTurn(e) {
 		e.target.blur();
-		this.setState((state) => update(state, {
-			state: { turn: { $set: (state.state.turn + 1) % 2 } }
-		}));
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getChangeTurn()
+		}}));
 	}
 	handleReveal(e) {
 		e.target.blur();
-		if (!this.getRevealEnabled())
-			return;
-		this.setState((state) => {
-			if (state.state.stage == 'wall' &&
-					state.state.substage == 'main') {
-				return update(Main.StopStateTimer(state), {
-					state: {
-						substage: { $set: 'connections' },
-						found: { $set: [0, 1, 2, 3] }
-					}
-				});
-			}
-			return update(state, {
-				state: { isRevealed: {
-					$set: !state.state.isRevealed
-				} }
-			});
-		});
+		this.setState((state) => update(state, { game: { $set:
+			state.game.getReveal()
+		}}));
 	}
 	handleExitConfig(e) {
 		e.target.blur();
@@ -625,45 +202,34 @@ class Main extends Component {
 	handleEnterConfig(e) {
 		e.target.blur();
 		this.setState((state) => update(state, {
-			showConfig: { $set: true }
+			showConfig: { $set: true },
+			coinToss: { $set: null }
 		}));
 	}
 	handleConfigChange(e) {
 		const reader = new FileReader();
 		reader.onload = (e) => {
-			this.setState((state) => update(
-				Main.ResetStateMicro(state, 0), {
-				game: { $set: parseGame(JSON.parse(e.target.result)) },
-				teams: {
-					[0]: { score: { $set: '0' } },
-					[1]: { score: { $set: '0' } },
-				},
-				state: {
-					turn: { $set: 0 },
-					stage: { $set: 'connections' },
-					substage: { $set: 'choose' },
-					puzzleIndex: { $set: 0 },
-					chosen: { $set: [] }
-				}
-			}));
+			this.setState((state) => update(state, { game: { $set:
+				state.game.getNewGame(
+					parseGame(JSON.parse(e.target.result)))
+			}}));
 		};
 		reader.readAsText(e.target.files[0]);
 	}
 	render() {
 		const teamCards = [];
-		const state = this.state.state;
-		const stage = state.stage;
-		const substage = state.substage;
+		const game = this.state.game;
+		const stage = game.stage;
+		const substage = game.substage;
 		for (let i = 0; i < 2; i++) {
 			const glow =
-				!(stage == 'vowels' &&
-					(substage == 'category' ||
-					substage == 'main' ||
-					substage == 'idle')) &&
-				i == state.turn;
-			teamCards.push(<TeamCard key={i} name={this.state.teams[i].name} score={this.state.teams[i].score} isOnRight={i == 1} glow={glow} onNameChange={this.teamNameChangeCallbacks[i]} onScoreChange={this.teamScoreChangeCallbacks[i]} onScoreInc={this.teamScoreIncCallbacks[i]} />);
+				!(stage == GameState.STAGE_VOWELS &&
+					(substage == GameState.SUBSTAGE_CATEGORY ||
+					substage == GameState.SUBSTAGE_MAIN)) &&
+				i == game.turn;
+			teamCards.push(<TeamCard key={i} name={game.teams[i].name} score={game.teams[i].score} isOnRight={i == 1} glow={glow} onNameChange={this.teamNameChangeCallbacks[i]} onScoreChange={this.teamScoreChangeCallbacks[i]} onScoreInc={this.teamScoreIncCallbacks[i]} />);
 		}
-		const timer = this.state.state.timer;
+		const timer = game.timer;
 		const progressVal = timer.getTimeUsed() / timer.maxTime * 100;
 		const timerRed = timer.isExpired();
 
@@ -677,30 +243,31 @@ class Main extends Component {
 			</button>;
 
 		const chooseHeader =
-			(stage == 'connections') ? 'Connections'
-			: (stage == 'sequences') ? 'Sequences'
-			: (stage == 'wall') ? 'Wall'
+			(stage == GameState.STAGE_CONNECTIONS) ? 'Connections'
+			: (stage == GameState.STAGE_SEQUENCES) ? 'Sequences'
+			: (stage == GameState.STAGE_WALL) ? 'Wall'
 			: '';
 		const isActive = timer.isRunning();
 		const panel =
-			(substage == 'choose') ?
+			(substage == GameState.SUBSTAGE_CHOOSE) ?
 				<ChoosePanel numChoices={
-					(stage == 'wall') ? 2 : 6
-				} chosen={state.chosen} header={chooseHeader} onClick={this.handleChooseClick} />
-			: (stage == 'wall') ?
-				<WallPanel data={this.state.game.walls[state.puzzleIndex]} index={state.index} progressVal={progressVal} isRevealed={state.isRevealed} strikes={state.strikes} selected={state.selected} found={state.found} onClick={this.handleWallClick} />
-			: (stage == 'connections' ||
-					stage == 'sequences') ?
-				<ConnectionsPanel data={this.state.game[stage][state.puzzleIndex]} index={state.index} progressVal={progressVal} isRevealed={state.isRevealed} isActive={isActive} />
-			: (stage == 'vowels') ?
-				<VowelsPanel data={this.state.game.vowels[state.puzzleIndex]} index={state.index} isRevealed={state.isRevealed} showPuzzle={state.substage != 'category'} />
+					(stage == GameState.STAGE_WALL) ? 2 : 6
+				} chosen={game.chosen} header={chooseHeader} onClick={this.handleChooseClick} />
+			: (stage == GameState.STAGE_WALL) ?
+				<WallPanel data={game.game.walls[game.puzzleIndex]} index={game.clueIndex} progressVal={progressVal} isRevealed={game.isRevealed} strikes={game.wall.strikes} selected={game.wall.selected} found={game.wall.found} onClick={this.handleWallClick} />
+			: (this.state.game.isConnectionsTypeStage()) ?
+				<ConnectionsPanel data={(stage == GameState.STAGE_CONNECTIONS) ? game.game.connections[game.puzzleIndex] : game.game.sequences[game.puzzleIndex]} index={game.clueIndex} progressVal={progressVal} isRevealed={game.isRevealed} isActive={isActive} />
+			: (stage == GameState.STAGE_VOWELS) ?
+				<VowelsPanel data={game.game.vowels[game.puzzleIndex]} index={game.clueIndex} isRevealed={game.isRevealed} showPuzzle={substage != GameState.SUBSTAGE_CATEGORY} />
 			: null;
 
-		const correctWrongDisabled = !this.getCorrectWrongEnabled();
-		const leftRightDisabled = !this.getLeftRightEnabled();
+		const correctWrongDisabled = !game.isCorrectWrongEnabled();
+		const leftRightDisabled = !game.isLeftRightEnabled();
 		const correctWrongButtons =
-			(stage == 'vowels' &&
-				(substage == 'main' || substage == 'category')) ? (
+			(stage == GameState.STAGE_VOWELS && (
+				substage == GameState.SUBSTAGE_CATEGORY ||
+				substage == GameState.SUBSTAGE_MAIN
+			)) ? (
 				<div className="btn-group mr-2">
 					<button type="button" className={`btn btn-md btn-primary py-0${leftRightDisabled ? ' disabled' : ''}`} onClick={this.handleLeft}>
 						<span style={{
@@ -741,6 +308,17 @@ class Main extends Component {
 									</p>
 									<p className="px-1">
 										You can also just click "Done" and play around, but only sample clues will be used.
+									</p>
+									<p className="px-1">
+										<a onClick={this.handleCoinToss} href="javascript:void(0);">
+											Coin toss
+										</a> (0 or 1): {
+											(this.state.coinToss == null) ?
+												'(click to toss)'
+											: this.state.coinToss ?
+												'Heads/Left'
+											: 'Tails/Right'
+										}
 									</p>
 								</div>
 							</div>
@@ -796,10 +374,15 @@ class Main extends Component {
 					</div>
 					{correctWrongButtons}
 					<div className="btn-group mr-2">
-						<button type="button" className={`btn btn-md btn-primary${this.getNextEnabled() ? '' : ' disabled'}`} onClick={this.handleNext}>
+						<button type="button" className={`btn btn-md btn-info${game.isPrevEnabled() ? '' : ' disabled'}`} onClick={this.handlePrev}>
+							Prev
+						</button>
+						<button type="button" className={`btn btn-md btn-primary${game.isNextEnabled() ? '' : ' disabled'}`} onClick={this.handleNext}>
 							Next
 						</button>
-						<button type="button" className={`btn btn-md btn-info${this.getBackEnabled() ? '' : ' disabled'}`} onClick={this.handleBack}>
+					</div>
+					<div className="btn-group mr-2">
+						<button type="button" className={`btn btn-md btn-info${game.isBackEnabled() ? '' : ' disabled'}`} onClick={this.handleBack}>
 							Back
 						</button>
 					</div>
@@ -812,7 +395,7 @@ class Main extends Component {
 						</button>
 					</div>
 					<div className="btn-group ml-2">
-						<button type="button" className={`btn btn-md btn-info${this.getRevealEnabled() ? '' : ' disabled'}`} onClick={this.handleReveal}>
+						<button type="button" className={`btn btn-md btn-info${game.isRevealEnabled() ? '' : ' disabled'}`} onClick={this.handleReveal}>
 							Reveal
 						</button>
 					</div>
