@@ -92,7 +92,6 @@ class Main extends Component {
 			});
 		}
 
-		this.gamepads = [];
 		this.gamepadsPrev = [];
 
 		this.handleCoinToss = this.handleCoinToss.bind(this);
@@ -120,9 +119,7 @@ class Main extends Component {
 	componentDidMount() {
 		window.requestAnimationFrame(this.onFrame);
 		window.addEventListener('gamepadconnected', (e) => {
-			console.log('Gamepad connected!');
 			const gamepad = e.gamepad;
-			this.gamepads[gamepad.index] = gamepad;
 			this.gamepadsPrev[gamepad.index] =
 				Main.GetGamepadSummary(gamepad);
 			this.setState((state) => {
@@ -138,9 +135,7 @@ class Main extends Component {
 			});
 		});
 		window.addEventListener('gamepaddisconnected', (e) => {
-			console.log('Gamepad disconnected!');
 			const gamepad = e.gamepad;
-			delete this.gamepads[gamepad.index];
 			delete this.gamepadsPrev[gamepad.index];
 			this.setState((state) => {
 				const arrPos = state.gamepads.findIndex(
@@ -161,13 +156,17 @@ class Main extends Component {
 	}
 	onFrame() {
 		this.setState((state) => {
+			const gamepadsPoll = navigator.getGamepads() ||
+				navigator.webkitGetGamepads() || [];
 			const gamepads = state.gamepads.slice(0);
 			const buzzed = [false, false];
 			for (const g of gamepads) {
-				if (!this.gamepads[g.index].connected)
+				if (!gamepadsPoll[g.index].connected)
+					continue;
+				if (!(g.index in this.gamepadsPrev))
 					continue;
 				const gamepad =
-					Main.GetGamepadSummary(this.gamepads[g.index]);
+					Main.GetGamepadSummary(gamepadsPoll[g.index]);
 				const gamepadPrev = this.gamepadsPrev[g.index];
 				this.gamepadsPrev[g.index] = gamepad;
 				const someButton = gamepad.buttons.some((b, j) => {
@@ -413,7 +412,7 @@ class Main extends Component {
 					<button type="button" className={`btn btn-md btn-success py-0${correctWrongDisabled ? ' disabled' : ''}`} onClick={this.handleCorrect}>
 						<span style={{
 							fontSize: '20px'
-						}}>{'\u2714'}</span>
+						}}>{'\u2713'}</span>
 					</button>
 					<button type="button" className={`btn btn-md btn-danger py-0${correctWrongDisabled ? ' disabled' : ''}`} onClick={this.handleWrong}>
 						<span style={{

@@ -19,9 +19,16 @@ General controls:
 - "Back": Returns to the selection menu. In the vowels stage, goes back to the wall selection menu.
 - "Config": Opens the config interface, where you can load a new game. Click "Done" to exit.
 	- You can also perform a coin toss here to decide who goes first. It does not affect anything in the game.
-	- You can configure buzzers (game controllers) here. Game controllers are automatically detected and displayed when they are plugged in. If the controller is already plugged in when you open the app, press a button on the controller to allow the app to detect it. The indicator on the screen will flash when any button or axis is moved, indicating a buzz. Click on the indicator to change which team is registered to each buzzer.
+	- See the Buzzers section for information on connecting buzzers. The buzzer indicator in the config panel will flash when a buzz is detected. Click on the indicator to change which team is registered to each buzzer.
 - "Turn": Change which team's turn it is.
 - "Reveal": Reveals or un-reveals the solution to the current puzzle. This does not affect any scores.
+
+Buzzers
+-------
+
+Game controllers can be used as buzzers. Controllers are automatically detected when they are plugged in. If the controller is already plugged in when you open the app, press a button on the controller to allow the app to detect it. If your controller is still not getting detected, make sure you don't have any other tabs open that also use the controller. Another thing you could try is to unplug the controller and plug it back in.
+
+A buzz is fired when any button is pressed or unpressed, or any axis is moved.
 
 Connections and Sequences
 -------------------------
