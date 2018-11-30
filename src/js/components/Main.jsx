@@ -17,6 +17,48 @@ const CONNECTIONS_TIMEOUT = 40 * 1000;
 const WALL_TIMEOUT = 2.5 * 60 * 1000;
 const WALL_WRONG_GUESS_TIMEOUT = 0.5 * 1000;
 const VOWELS_TIMEOUT = 90 * 1000;
+const BUZZ_TEST_TIMEOUT = 0.2 * 1000;
+
+class Gamepad {
+	constructor(index, teamId) {
+		this.index = index;
+		this.teamId = teamId;
+		this.buzzed = null;
+	}
+};
+
+const GamepadsConfig = (props) => {
+	const icons = [];
+	if (props.gamepads.length == 0)
+		return <p className="text-left px-1">No buzzers connected!</p>;
+	icons.push(<p className="text-left px-1 mb-1" key="header">
+		Buzzers detected (click to change team assignment):
+	</p>);
+	for (const [index, g] of props.gamepads.entries()) {
+		const handleClick = ((index) => ((e) => {
+			e.target.blur();
+			props.onClick(index);
+		}))(index);
+		const buzzed = g.buzzed != null &&
+			new Date().getTime() - g.buzzed < BUZZ_TEST_TIMEOUT;
+		const btnColor = (!buzzed) ? 'btn-light' :
+			(g.teamId == 0) ? 'btn-success' : 'btn-danger';
+		icons.push(
+		<button className={`mx-1 btn ${btnColor}`} key={g.index} onClick={handleClick}>
+			{(g.teamId == 0) ? 'Left Team' : 'Right Team'}
+		</button>
+		);
+	}
+	return (
+	<div>
+		{icons}
+	</div>
+	);
+}
+GamepadsConfig.propTypes = {
+	gamepads: PropTypes.arrayOf(PropTypes.instanceOf(Gamepad)),
+	onClick: PropTypes.func
+}
 
 function parseGame(jsonData) {
 	return new GameData(jsonData);
@@ -29,8 +71,10 @@ class Main extends Component {
 		this.state = {
 			game: new GameState(parseGame(SAMPLE_GAME)),
 			showConfig: true,
-			coinToss: null
+			coinToss: null,
+			gamepads: []
 		};
+
 		this.timerInput = React.createRef();
 
 		this.teamNameChangeCallbacks = [];
@@ -47,6 +91,10 @@ class Main extends Component {
 				this.handleTeamScoreInc(i, newVal);
 			});
 		}
+
+		this.gamepads = [];
+		this.gamepadsPrev = [];
+
 		this.handleCoinToss = this.handleCoinToss.bind(this);
 		this.onFrame = this.onFrame.bind(this);
 		this.handleWallClick = this.handleWallClick.bind(this);
@@ -67,15 +115,88 @@ class Main extends Component {
 		this.handleExitConfig = this.handleExitConfig.bind(this);
 		this.handleEnterConfig = this.handleEnterConfig.bind(this);
 		this.handleConfigChange = this.handleConfigChange.bind(this);
+		this.handleGamepadClick = this.handleGamepadClick.bind(this);
 	}
 	componentDidMount() {
 		window.requestAnimationFrame(this.onFrame);
+		window.addEventListener('gamepadconnected', (e) => {
+			console.log('Gamepad connected!');
+			const gamepad = e.gamepad;
+			this.gamepads[gamepad.index] = gamepad;
+			this.gamepadsPrev[gamepad.index] =
+				Main.GetGamepadSummary(gamepad);
+			this.setState((state) => {
+				if (state.gamepads.some(g => g.index == gamepad.index))
+					return state;
+				const teamId = state.gamepads.some(
+					g => g.teamId == 0) ? 1 : 0;
+				return update(state, {
+					gamepads: { $push: [new Gamepad(
+						gamepad.index, teamId
+					)] }
+				});
+			});
+		});
+		window.addEventListener('gamepaddisconnected', (e) => {
+			console.log('Gamepad disconnected!');
+			const gamepad = e.gamepad;
+			delete this.gamepads[gamepad.index];
+			delete this.gamepadsPrev[gamepad.index];
+			this.setState((state) => {
+				const arrPos = state.gamepads.findIndex(
+					g => g.index == gamepad.index);
+				if (arrPos == -1)
+					return state;
+				return update(state, {
+					gamepads: { $splice: [[arrPos, 1]] }
+				});
+			});
+		});
+	}
+	static GetGamepadSummary(g) {
+		return {
+			buttons: g.buttons.map(b => b.pressed),
+			axes: g.axes.slice(0)
+		};
 	}
 	onFrame() {
-		this.setState((state) => update(state, { game: { $set:
-			state.game.getUpdateCurrTime()
-			.getUpdateTimer().getUpdateWrongGuessPenalty()
-		}}));
+		this.setState((state) => {
+			const gamepads = state.gamepads.slice(0);
+			const buzzed = [false, false];
+			for (const g of gamepads) {
+				if (!this.gamepads[g.index].connected)
+					continue;
+				const gamepad =
+					Main.GetGamepadSummary(this.gamepads[g.index]);
+				const gamepadPrev = this.gamepadsPrev[g.index];
+				this.gamepadsPrev[g.index] = gamepad;
+				const someButton = gamepad.buttons.some((b, j) => {
+					return b != gamepadPrev.buttons[j];
+				});
+				const someAxis = gamepad.axes.some((a, j) => {
+					return Math.abs(a - gamepadPrev.axes[j]) > 0.05;
+				});
+				if (someButton || someAxis) {
+					g.buzzed = new Date().getTime();
+					buzzed[g.teamId] = true;
+				}
+			}
+			const buzzTeam =
+				(buzzed[0] && buzzed[1]) ?
+					Math.floor(Math.random() * 2)
+				: buzzed[0] ? 0
+				: buzzed[1] ? 1
+				: null;
+			const afterBuzz = (buzzTeam != null) ?
+				state.game.getBuzz(buzzTeam) : state.game;
+			return update(state, {
+				game: { $set:
+					afterBuzz.getUpdateCurrTime()
+					.getUpdateTimer().getUpdateWrongGuessPenalty()
+				},
+				gamepads: { $set: gamepads }
+			})
+		});
 		window.requestAnimationFrame(this.onFrame);
 	}
 	tossCoin() {
@@ -216,6 +337,13 @@ class Main extends Component {
 		};
 		reader.readAsText(e.target.files[0]);
 	}
+	handleGamepadClick(gamepadId) {
+		this.setState((state) => update(state, {
+			gamepads: { [gamepadId]: { teamId: {
+				$set: (state.gamepads[gamepadId].teamId + 1) % 2
+			} } }
+		}));
+	}
 	render() {
 		const teamCards = [];
 		const game = this.state.game;
@@ -322,7 +450,12 @@ class Main extends Component {
 									</p>
 								</div>
 							</div>
-							<div className="form-group row w-100">
+							<div className="row w-100">
+								<div className="col">
+									<GamepadsConfig gamepads={this.state.gamepads} onClick={this.handleGamepadClick} />
+								</div>
+							</div>
+							<div className="form-group row w-100 mt-2">
 								<label className="col-4 mb-0">
 									New Game File:
 								</label>
