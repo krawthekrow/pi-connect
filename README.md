@@ -30,6 +30,8 @@ Game controllers can be used as buzzers. Controllers are automatically detected 
 
 A buzz is fired when any button is pressed or unpressed, or any axis is moved.
 
+Buzzers only affect the vowels round, since there is no need to settle "who buzzed first" disputes in other rounds, and something like clapping would suffice.
+
 Connections and Sequences
 -------------------------
 
