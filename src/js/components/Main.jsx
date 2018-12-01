@@ -439,7 +439,7 @@ class Main extends Component {
 									<p className="px-1">
 										<a onClick={this.handleCoinToss} href="javascript:void(0);">
 											Coin toss
-										</a> (0 or 1): {
+										</a>: {
 											(this.state.coinToss == null) ?
 												'(click to toss)'
 											: this.state.coinToss ?
