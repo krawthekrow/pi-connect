@@ -277,10 +277,15 @@ class GameState {
 					substage: { $set: GameState.SUBSTAGE_CATEGORY },
 					isRevealed: { $set: false }
 				});
+			return update(this, {
+				substage: { $set: GameState.SUBSTAGE_MAIN },
+				isRevealed: { $set: false },
+				clueIndex: { $set: this.clueIndex - 1 }
+			});
 		}
 		return update(this, {
-			clueIndex: { $set: this.clueIndex - 1 },
-			isRevealed: { $set: false }
+			isRevealed: { $set: false },
+			clueIndex: { $set: this.clueIndex - 1 }
 		});
 	}
 	getBack() {
