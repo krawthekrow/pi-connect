@@ -1,3 +1,5 @@
+import update from 'immutability-helper';
+
 class TimerUI {
 	constructor(maxTime) {
 		this.text = null;
@@ -5,6 +7,10 @@ class TimerUI {
 		this.stop = null;
 		this.currTime = new Date().getTime();
 		this.maxTime = maxTime;
+
+		// this is necessary to convince Chrome to re-render progress bars
+		this.progressRenderCounter = 0;
+		this.progressVal = this.recalcProgressVal();
 	}
 	isStarted() {
 		return this.start != null;
@@ -57,6 +63,48 @@ class TimerUI {
 		const timeLeftSecondsText = (timeLeftSeconds % 60).toString();
 		const timeLeftSecondsPadded = timeLeftSecondsText.padStart(2, '0');
 		return `${timeLeftMinutes}:${timeLeftSecondsPadded}`;
+	}
+	recalcProgressVal() {
+		return this.getTimeUsed() / this.maxTime * 100;
+	}
+	getResetProgressRenderCounter() {
+		return update(this, {
+			progressRenderCounter: { $set: 0 },
+			progressVal: { $set: this.recalcProgressVal() }
+		});
+	}
+	getUpdateCurrTime() {
+		const currTimeUpdated = update(this, {
+			currTime: { $set: new Date().getTime() },
+			progressRenderCounter: { $set: this.progressRenderCounter + 1 }
+		});
+		if (currTimeUpdated.progressRenderCounter == 2)
+			return currTimeUpdated.getResetProgressRenderCounter();
+		else
+			return currTimeUpdated;
+	}
+	getStart() {
+		const timeUsed = this.getTimeUsed();
+		if (timeUsed == null) {
+			console.error('Time used null.');
+			return this;
+		}
+		const newStart = new Date().getTime() - timeUsed;
+		return update(this, {
+			text: { $set: null },
+			stop: { $set: null },
+			start: { $set: newStart }
+		}).getResetProgressRenderCounter();
+	}
+	getStop() {
+		return update(this, {
+			stop: { $set: new Date().getTime() }
+		}).getResetProgressRenderCounter();
+	}
+	getChange(newVal) {
+		return update(this, {
+			text: { $set: newVal }
+		}).getResetProgressRenderCounter();
 	}
 };
 TimerUI.ParseText = (val) => {

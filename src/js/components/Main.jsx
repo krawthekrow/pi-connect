@@ -204,6 +204,7 @@ class Main extends Component {
 		}));
 	}
 	handleCoinToss(e) {
+		e.preventDefault();
 		e.target.blur();
 		this.tossCoin();
 	}
@@ -357,7 +358,7 @@ class Main extends Component {
 			teamCards.push(<TeamCard key={i} name={game.teams[i].name} score={game.teams[i].score} isOnRight={i == 1} glow={glow} onNameChange={this.teamNameChangeCallbacks[i]} onScoreChange={this.teamScoreChangeCallbacks[i]} onScoreInc={this.teamScoreIncCallbacks[i]} />);
 		}
 		const timer = game.timer;
-		const progressVal = timer.getTimeUsed() / timer.maxTime * 100;
+		const progressVal = timer.progressVal;
 		const timerRed = timer.isExpired();
 
 		const startStopButton =
@@ -437,7 +438,7 @@ class Main extends Component {
 										You can also just click "Done" and play around, but only sample clues will be used.
 									</p>
 									<p className="px-1">
-										<a onClick={this.handleCoinToss} href="javascript:void(0);">
+										<a onClick={this.handleCoinToss} href="#">
 											Coin toss
 										</a>: {
 											(this.state.coinToss == null) ?

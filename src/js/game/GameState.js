@@ -60,30 +60,20 @@ class GameState {
 	getStartTimer() {
 		if (!this.timer.isValid())
 			return this;
-		const timeUsed = this.timer.getTimeUsed();
-		if (timeUsed == null) {
-			console.error('Time used null.');
-			return this;
-		}
-		const newStart = new Date().getTime() - timeUsed;
 		return update(this, {
-			timer: {
-				text: { $set: null },
-				stop: { $set: null },
-				start: { $set: newStart }
-			}
+			timer: { $set: this.timer.getStart() }
 		});
 	}
 	getStopTimer() {
 		if (!this.timer.isRunning())
 			return this;
 		return update(this, {
-			timer: { stop: { $set: new Date().getTime() } }
+			timer: { $set: this.timer.getStop() }
 		});
 	}
 	getChangeTimer(newVal) {
 		return update(this, {
-			timer: { text: { $set: newVal } }
+			timer: { $set: this.timer.getChange(newVal) }
 		});
 	}
 	getChangeTurn() {
@@ -443,7 +433,7 @@ class GameState {
 	}
 	getUpdateCurrTime() {
 		return update(this, {
-			timer: { currTime: { $set: new Date().getTime() } }
+			timer: { $set: this.timer.getUpdateCurrTime() }
 		});
 	}
 	getUpdateTimer() {
