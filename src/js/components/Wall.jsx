@@ -61,7 +61,7 @@ const WallPanel = (props) => {
 	rows.push(
 	<div key={'stats'} className="row">
 		<div className="col d-flex align-items-center">
-			<div className={`d-flex justify-content-around${strikesVisible ? '' : ' invisible'}`} style={{
+			<div className={`d-flex justify-content-around align-items-center${strikesVisible ? '' : ' invisible'}`} style={{
 				width: '120px'
 			}}>
 				{strikes}
