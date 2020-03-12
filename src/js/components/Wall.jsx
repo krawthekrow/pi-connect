@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
+import { SetTileImageStyle } from './Tile.jsx';
 
 const WallPanel = (props) => {
 	const foundPerm = [];
@@ -30,16 +31,17 @@ const WallPanel = (props) => {
 				e.target.blur();
 				props.onClick(index);
 			}))(index);
-			const btnText =
-				props.data.groups[Math.trunc(index / 4)].data[index % 4];
+			const clue = props.data.groups[Math.trunc(index / 4)].data[index % 4];
 			const disabled = props.found.length == 4 && props.index != i;
 			const btnStyle = disabled ? {
 				opacity: '.3'
 			} : {};
+			if ('image' in clue)
+				SetTileImageStyle(btnStyle, clue.image);
 			cols.push(
 			<div key={j} className="col d-flex justify-content-center align-items-center px-0">
 				<button type="button" className={`btn btn-lg w-100 h-100 ${btnColor}${disabled ? ' disabled' : ''}`} onClick={handleClick} style={btnStyle}>
-					<h2 className="mb-0">{btnText}</h2>
+					<h2 className="mb-0">{('text' in clue) ? clue.text : ''}</h2>
 				</button>
 			</div>
 			);

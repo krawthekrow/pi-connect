@@ -1,13 +1,12 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
-import { ConnectionsData, ConnectionsTileData } from '../game/GameData.js';
+import { ConnectionsData, TileData } from '../game/GameData.js';
 import Mechanics from '../game/Mechanics.js';
+import { SetTileImageStyle } from './Tile.jsx';
 
 const ConnectionsTile = (props) => {
 	const isOverlay = props.mode == ConnectionsTile.MODE_OVERLAY;
-	const backgroundModifier = isOverlay ?
-		'linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)), ' : '';
 	const hasImage = isOverlay ||
 		(props.mode == ConnectionsTile.MODE_PICTURE);
 	const hasAudio = props.mode == ConnectionsTile.MODE_MUSIC;
@@ -26,12 +25,8 @@ const ConnectionsTile = (props) => {
 	const style = {
 		height: '200px'
 	};
-	if (hasImage) {
-		style.backgroundImage = backgroundModifier + 'url(' + props.data.image + ')';
-		style.backgroundRepeat = 'no-repeat';
-		style.backgroundPosition = 'center';
-		style.backgroundSize = 'contain';
-	}
+	if (hasImage)
+		SetTileImageStyle(style, props.data.image, isOverlay);
 	const pictureDiv = (
 		<div className="w-100 d-flex justify-content-center align-items-center" style={style}>
 			{hasText ? textElem : null}
@@ -75,7 +70,7 @@ ConnectionsTile.propTypes = {
 	hidden: PropTypes.bool.isRequired,
 	timerHidden: PropTypes.bool.isRequired,
 	progressVal: PropTypes.number.isRequired,
-	data: PropTypes.instanceOf(ConnectionsTileData).isRequired,
+	data: PropTypes.instanceOf(TileData).isRequired,
 	mode: PropTypes.number.isRequired,
 	isActive: PropTypes.bool.isRequired
 };

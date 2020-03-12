@@ -1,8 +1,14 @@
 import Util from '../Util.js';
 
-export class ConnectionsTileData {
+export class TileData {
 	constructor(jsonData) {
-		this.text = jsonData.text;
+		// legacy
+		if (typeof jsonData == 'string') {
+			this.text = jsonData;
+			return;
+		}
+		if ('text' in jsonData)
+			this.text = jsonData.text;
 		if ('audio' in jsonData)
 			this.audio = jsonData.audio;
 		if ('image' in jsonData)
@@ -15,13 +21,17 @@ export class ConnectionsData {
 		this.isSequence = isSequence;
 		this.solution = jsonData.solution;
 		this.data = jsonData.data.map((innerJson) =>
-			new ConnectionsTileData(innerJson));
+			new TileData(innerJson));
 	}
 };
 
 export class WallData {
 	constructor(jsonData) {
 		this.groups = jsonData.groups;
+		for (const group of this.groups) {
+			group.data = group.data.map((innerJson) =>
+				new TileData(innerJson));
+		}
 		this.perm = ('perm' in jsonData) ?
 			jsonData.perm : Util.GetRandomPermutation(16);
 	}
