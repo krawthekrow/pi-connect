@@ -3,14 +3,15 @@ import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import update from 'immutability-helper';
 import TeamCard from './TeamCard.jsx';
-import TimerUI from '../game/TimerUI.jsx';
 import ConnectionsPanel from './Connections.jsx';
 import ChoosePanel from './Choose.jsx';
 import WallPanel from './Wall.jsx';
 import VowelsPanel from './Vowels.jsx';
+import GamepadsConfig from './GamepadsConfig.jsx';
 import GameData from '../game/GameData.js';
 import Mechanics from '../game/Mechanics.js';
 import GameState from '../game/GameState.js';
+import TimerUI from '../game/TimerUI.js';
 import SAMPLE_GAME from '../game/SampleGame.js';
 
 const CONNECTIONS_TIMEOUT = 40 * 1000;
@@ -19,52 +20,11 @@ const WALL_WRONG_GUESS_TIMEOUT = 0.5 * 1000;
 const VOWELS_TIMEOUT = 90 * 1000;
 const BUZZ_TEST_TIMEOUT = 0.2 * 1000;
 
-class Gamepad {
-	constructor(index, teamId) {
-		this.index = index;
-		this.teamId = teamId;
-		this.buzzed = null;
-	}
-};
-
-const GamepadsConfig = (props) => {
-	const icons = [];
-	if (props.gamepads.length == 0)
-		return <p className="text-left px-1">No buzzers connected!</p>;
-	icons.push(<p className="text-left px-1 mb-1" key="header">
-		Buzzers detected (click to change team assignment):
-	</p>);
-	for (const [index, g] of props.gamepads.entries()) {
-		const handleClick = ((index) => ((e) => {
-			e.target.blur();
-			props.onClick(index);
-		}))(index);
-		const buzzed = g.buzzed != null &&
-			new Date().getTime() - g.buzzed < BUZZ_TEST_TIMEOUT;
-		const btnColor = (!buzzed) ? 'btn-light' :
-			(g.teamId == 0) ? 'btn-success' : 'btn-danger';
-		icons.push(
-		<button className={`mx-1 btn ${btnColor}`} key={g.index} onClick={handleClick}>
-			{(g.teamId == 0) ? 'Left Team' : 'Right Team'}
-		</button>
-		);
-	}
-	return (
-	<div>
-		{icons}
-	</div>
-	);
-}
-GamepadsConfig.propTypes = {
-	gamepads: PropTypes.arrayOf(PropTypes.instanceOf(Gamepad)),
-	onClick: PropTypes.func
-}
-
 function parseGame(jsonData) {
 	return new GameData(jsonData);
 }
 
-class Main extends Component {
+class GameUI extends Component {
 	constructor(props) {
 		super(props);
 
@@ -115,36 +75,47 @@ class Main extends Component {
 		this.handleEnterConfig = this.handleEnterConfig.bind(this);
 		this.handleConfigChange = this.handleConfigChange.bind(this);
 		this.handleGamepadClick = this.handleGamepadClick.bind(this);
+		this.handleGamepadConnected = this.handleGamepadConnected.bind(this);
+		this.handleGamepadDisconnected = this.handleGamepadDisconnected.bind(this);
+
+		this.onFrameId = null;
 	}
 	componentDidMount() {
-		window.requestAnimationFrame(this.onFrame);
-		window.addEventListener('gamepadconnected', (e) => {
-			const gamepad = e.gamepad;
-			this.gamepadsPrev[gamepad.index] =
-				Main.GetGamepadSummary(gamepad);
-			this.setState((state) => {
-				if (state.gamepads.some(g => g.index == gamepad.index))
-					return state;
-				const teamId = state.gamepads.some(
-					g => g.teamId == 0) ? 1 : 0;
-				return update(state, {
-					gamepads: { $push: [new Gamepad(
-						gamepad.index, teamId
-					)] }
-				});
+		this.onFrameId = window.requestAnimationFrame(this.onFrame);
+		window.addEventListener('gamepadconnected', this.handleGamepadConnected);
+		window.addEventListener('gamepaddisconnected', this.handleGamepadDisconnected);
+	}
+	componentWillUnmount() {
+		window.cancelAnimationFrame(this.onFrameId);
+		window.removeEventListener('gamepadconnected', this.handleGamepadConnected);
+		window.removeEventListener('gamepaddisconnected', this.handleGamepadDisconnected);
+	}
+	handleGamepadConnected(e) {
+		const gamepad = e.gamepad;
+		this.gamepadsPrev[gamepad.index] =
+			Main.GetGamepadSummary(gamepad);
+		this.setState((state) => {
+			if (state.gamepads.some(g => g.index == gamepad.index))
+				return state;
+			const teamId = state.gamepads.some(
+				g => g.teamId == 0) ? 1 : 0;
+			return update(state, {
+				gamepads: { $push: [new Gamepad(
+					gamepad.index, teamId
+				)] }
 			});
 		});
-		window.addEventListener('gamepaddisconnected', (e) => {
-			const gamepad = e.gamepad;
-			delete this.gamepadsPrev[gamepad.index];
-			this.setState((state) => {
-				const arrPos = state.gamepads.findIndex(
-					g => g.index == gamepad.index);
-				if (arrPos == -1)
-					return state;
-				return update(state, {
-					gamepads: { $splice: [[arrPos, 1]] }
-				});
+	}
+	handleGamepadDisconnected(e) {
+		const gamepad = e.gamepad;
+		delete this.gamepadsPrev[gamepad.index];
+		this.setState((state) => {
+			const arrPos = state.gamepads.findIndex(
+				g => g.index == gamepad.index);
+			if (arrPos == -1)
+				return state;
+			return update(state, {
+				gamepads: { $splice: [[arrPos, 1]] }
 			});
 		});
 	}
@@ -355,7 +326,16 @@ class Main extends Component {
 					(substage == GameState.SUBSTAGE_CATEGORY ||
 					substage == GameState.SUBSTAGE_MAIN)) &&
 				i == game.turn;
-			teamCards.push(<TeamCard key={i} name={game.teams[i].name} score={game.teams[i].score} isOnRight={i == 1} glow={glow} onNameChange={this.teamNameChangeCallbacks[i]} onScoreChange={this.teamScoreChangeCallbacks[i]} onScoreInc={this.teamScoreIncCallbacks[i]} />);
+			teamCards.push(<TeamCard
+				key={i}
+				name={game.teams[i].name}
+				score={game.teams[i].score}
+				isOnRight={i == 1}
+				glow={glow}
+				onNameChange={this.teamNameChangeCallbacks[i]}
+				onScoreChange={this.teamScoreChangeCallbacks[i]}
+				onScoreInc={this.teamScoreIncCallbacks[i]}
+			/>);
 		}
 		const timer = game.timer;
 		const progressVal = timer.progressVal;
@@ -363,10 +343,20 @@ class Main extends Component {
 
 		const startStopButton =
 			(timer.isRunning()) ?
-			<button type="button" className="btn btn-md btn-danger" onClick={this.handleTimerStop}>
+			<button
+				type="button"
+				className="btn btn-md btn-danger"
+				onClick={this.handleTimerStop}
+			>
 				Stop
 			</button> :
-			<button type="button" className={`btn btn-md btn-success${timer.isValid() ? '' : ' disabled'}`} onClick={this.handleTimerStart}>
+			<button
+				type="button"
+				className={
+					`btn btn-md btn-success${timer.isValid() ? '' : ' disabled'}`
+				}
+				onClick={this.handleTimerStart}
+			>
 				Start
 			</button>;
 
@@ -536,6 +526,19 @@ class Main extends Component {
 			</footer>
 		</div>
 		);
+	}
+};
+
+class Main extends Component {
+	constructor(props) {
+		super(props);
+	}
+	render() {
+		return <div className="container" style={{
+			height: '100%',
+		}}>
+			<GameUI />
+		</div>;
 	}
 };
 

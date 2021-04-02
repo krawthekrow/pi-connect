@@ -7,19 +7,19 @@ function makeSampleGame() {
 	};
 	for (let i = 0; i < 6; i++) {
 		res.connections.push({
-			solution: 'sample',
+			solution: 'solution',
 			data: []
 		});
 		res.sequences.push({
-			solution: 'sample',
+			solution: 'solution',
 			data: []
 		});
 		for(let j = 0; j < 4; j++) {
 			res.connections[i].data.push({
-				text: 'sample'
+				text: 'clue'
 			});
 			res.sequences[i].data.push({
-				text: 'sample'
+				text: 'clue'
 			});
 		}
 	}
@@ -29,21 +29,21 @@ function makeSampleGame() {
 		});
 		for (let j = 0; j < 4; j++) {
 			res.walls[i].groups.push({
-				solution: 'sample',
+				solution: 'solution',
 				data: []
 			});
 			for (let k = 0; k < 4; k++) {
-				res.walls[i].groups[j].data.push('sample');
+				res.walls[i].groups[j].data.push(`item ${j+1}`);
 			}
 		}
 	}
 	for (let i = 0; i < 4; i++) {
 		res.vowels.push({
-			desc: 'sample',
+			desc: 'category',
 			data: []
 		});
 		for (let j = 0; j < 4; j++) {
-			res.vowels[i].data.push('sample');
+			res.vowels[i].data.push('solution');
 		}
 	}
 	return res;

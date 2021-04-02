@@ -1,5 +1,5 @@
 import update from 'immutability-helper';
-import TimerUI from './TimerUI.jsx';
+import TimerUI from './TimerUI.js';
 import Mechanics from '../game/Mechanics.js';
 import SAMPLE_GAME from '../game/SampleGame.js';
 
