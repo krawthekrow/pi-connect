@@ -23,7 +23,8 @@ const ConnectionsTile = (props) => {
 		}}>{text}</h1> :
 		<h2>{text}</h2>;
 	const style = {
-		height: '200px'
+		height: '200px',
+		overflowWrap: 'anywhere',
 	};
 	if (hasImage)
 		SetTileImageStyle(style, props.data.image, isOverlay);
