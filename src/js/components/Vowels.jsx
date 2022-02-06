@@ -5,7 +5,7 @@ import {VowelsData} from '../game/GameData.js';
 
 const VowelsPanel = (props) => {
 	const text = props.isRevealed ? props.data.data[props.index].solution
-		: props.data.data[props.index].problem;
+		: props.data.data[props.index].clue;
 	return [
 		<div key="tiles" className="row flex-fill">
 			<div className="col d-flex flex-column justify-content-center">

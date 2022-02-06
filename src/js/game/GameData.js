@@ -39,8 +39,7 @@ export class WallData {
 
 export class VowelsData {
 	constructor(jsonData) {
-		this.desc = jsonData.desc;
-		this.data = jsonData.data.map((word) => {
+		const makeClue = (word) => {
 			let transformed = '';
 			for (let i = 0; i < word.length; i++) {
 				if ('aeiouy'.includes(word[i].toLowerCase()))
@@ -51,10 +50,24 @@ export class VowelsData {
 					transformed += ' ';
 				transformed += word[i];
 			}
-			return {
-				problem: transformed.toUpperCase(),
-				solution: word
-			};
+			return transformed.toUpperCase();
+		};
+		this.desc = jsonData.desc;
+		this.data = jsonData.data.map((data) => {
+			if (typeof data === 'string') {
+				// Legacy vowels data format
+				return {
+					clue: makeClue(data),
+					solution: data
+				};
+			}
+			if (!('clue' in data)) {
+				return {
+					clue: makeClue(data.solution),
+					solution: data.solution
+				};
+			}
+			return data;
 		});
 	}
 };
