@@ -58,17 +58,49 @@ const WallPanel = (props) => {
 		);
 	}
 	const strikes = [];
+	const strikeToken = (
+		<h3 className="mb-0 text-danger">
+			{'\u2717'}
+		</h3>
+	);
+	const isCustomLifeToken = 'lifeToken' in props && props.lifeToken;
+	const isCustomTextLifeToken =
+		isCustomLifeToken && 'text' in props.lifeToken;
+	const isCustomHtmlLifeToken =
+		isCustomLifeToken && 'html' in props.lifeToken;
+	const isCustomImageLifeToken =
+		isCustomLifeToken && 'image' in props.lifeToken;
+	const lifeTokenText = (isCustomLifeToken && 'text' in props.lifeToken) ?
+		props.lifeToken.text : '\u03c0';
+	const hasLifeTokenText = !isCustomLifeToken || isCustomTextLifeToken;
+	const lifeToken = hasLifeTokenText ? <h3
+		className="d-flex align-items-center justify-content-center mb-0 text-info"
+	>
+		<b>{lifeTokenText}</b>
+	</h3> : null;
+	const lifeTokenStyle = { flex: 1 };
+	const strikeTokenStyle = { flex: 1 };
+	if (isCustomImageLifeToken) {
+		SetTileImageStyle(lifeTokenStyle, props.lifeToken.image);
+	}
 	for (let i = 0; i < 3; i++) {
-		const content = (props.strikes > i) ?
-			<h2 key={i} className="mb-0 text-danger">{'\u2717'}</h2>
-			: <h2 key={i} className="mb-0 text-info"><b>{'\u03c0'}</b></h2>;
-		strikes.push(content);
+		const isStrike = props.strikes > i;
+		const isCustomHtml = !isStrike && isCustomHtmlLifeToken;
+		strikes.push(<div key={i}
+			style={isStrike ? strikeTokenStyle : lifeTokenStyle}
+			className="d-flex align-items-center justify-content-center"
+			dangerouslySetInnerHTML={
+				isCustomHtml ? {
+					__html: props.lifeToken.html
+				} : null
+			}
+		>{isCustomHtml ? null : (isStrike ? strikeToken : lifeToken)}</div>);
 	}
 	const strikesVisible = props.found.length >= 2;
 	rows.push(
 	<div key={'stats'} className="row">
-		<div className="col d-flex align-items-center">
-			<div className={`d-flex justify-content-around align-items-center${strikesVisible ? '' : ' invisible'}`} style={{
+		<div className="col d-flex align-items-center mt-1">
+			<div className={`d-flex justify-content-around align-items-stretch h-100${strikesVisible ? '' : ' invisible'}`} style={{
 				width: '120px'
 			}}>
 				{strikes}

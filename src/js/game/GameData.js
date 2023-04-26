@@ -76,6 +76,7 @@ export class VowelsData {
 
 export default class GameData {
 	constructor(jsonData) {
+		this.meta = jsonData.meta ? jsonData.meta : {};
 		this.connections = jsonData.connections.map((innerJson) =>
 			new ConnectionsData(false, innerJson));
 		this.sequences = jsonData.sequences.map((innerJson) =>

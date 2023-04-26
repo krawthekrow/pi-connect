@@ -372,7 +372,7 @@ class GameUI extends Component {
 					(stage == GameState.STAGE_WALL) ? 2 : 6
 				} chosen={game.chosen} header={chooseHeader} onClick={this.handleChooseClick} />
 			: (stage == GameState.STAGE_WALL) ?
-				<WallPanel data={game.game.walls[game.puzzleIndex]} index={game.clueIndex} progressVal={progressVal} isRevealed={game.isRevealed} strikes={game.wall.strikes} selected={game.wall.selected} found={game.wall.found} onClick={this.handleWallClick} />
+				<WallPanel data={game.game.walls[game.puzzleIndex]} index={game.clueIndex} progressVal={progressVal} isRevealed={game.isRevealed} strikes={game.wall.strikes} lifeToken={game.game.meta.wallLifeToken} selected={game.wall.selected} found={game.wall.found} onClick={this.handleWallClick} />
 			: (this.state.game.isConnectionsTypeStage()) ?
 				<ConnectionsPanel data={(stage == GameState.STAGE_CONNECTIONS) ? game.game.connections[game.puzzleIndex] : game.game.sequences[game.puzzleIndex]} index={game.clueIndex} progressVal={progressVal} isRevealed={game.isRevealed} isActive={isActive} />
 			: (stage == GameState.STAGE_VOWELS) ?
