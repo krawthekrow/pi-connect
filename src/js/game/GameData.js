@@ -13,6 +13,8 @@ export class TileData {
 			this.audio = jsonData.audio;
 		if ('image' in jsonData)
 			this.image = jsonData.image;
+		if ('html' in jsonData)
+			this.html = jsonData.html;
 	}
 };
 

@@ -29,7 +29,9 @@ const ConnectionsTile = (props) => {
 	if (hasImage)
 		SetTileImageStyle(style, props.data.image, isOverlay);
 	const pictureDiv = (
-		<div className="w-100 d-flex justify-content-center align-items-center" style={style}>
+		<div className="w-100 d-flex justify-content-center align-items-center" style={style} dangerouslySetInnerHTML={
+			(props.mode == ConnectionsTile.MODE_HTML) ? {__html: props.data.html} : null
+		}>
 			{hasText ? textElem : null}
 		</div>
 	);
@@ -80,6 +82,7 @@ ConnectionsTile.MODE_TEXT = 1;
 ConnectionsTile.MODE_OVERLAY = 2;
 ConnectionsTile.MODE_QUESTIONMARK = 3;
 ConnectionsTile.MODE_MUSIC = 4;
+ConnectionsTile.MODE_HTML = 5;
 
 class ConnectionsPanel extends Component {
 	constructor(props) {
@@ -93,6 +96,8 @@ class ConnectionsPanel extends Component {
 			return (!data.isSequence && isRevealed) ?
 					ConnectionsTile.MODE_OVERLAY :
 				ConnectionsTile.MODE_PICTURE;
+		else if ('html' in data)
+			return ConnectionsTile.MODE_HTML;
 		else
 			return ConnectionsTile.MODE_TEXT;
 	}

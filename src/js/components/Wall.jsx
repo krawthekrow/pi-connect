@@ -40,8 +40,13 @@ const WallPanel = (props) => {
 				SetTileImageStyle(btnStyle, clue.image);
 			cols.push(
 			<div key={j} className="col d-flex justify-content-center align-items-center px-0">
-				<button type="button" className={`btn btn-lg w-100 h-100 ${btnColor}${disabled ? ' disabled' : ''}`} onClick={handleClick} style={btnStyle}>
-					<h2 className="mb-0">{('text' in clue) ? clue.text : ''}</h2>
+				<button type="button" className={`btn btn-lg w-100 h-100 ${btnColor}${disabled ? ' disabled' : ''}`} onClick={handleClick} style={btnStyle} dangerouslySetInnerHTML={
+					('html' in clue) ? {__html: clue.html} : null
+				}>
+					{ ('text' in clue) ?
+						<h2 className="mb-0">{clue.text}</h2> :
+						null
+					}
 				</button>
 			</div>
 			);
