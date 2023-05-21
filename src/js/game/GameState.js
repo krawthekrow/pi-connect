@@ -48,11 +48,31 @@ class GameState {
 		const score = (parseInt(this.teams[teamId].score) + inc).toString();
 		return this.getChangeScore(teamId, score);
 	}
+	getTimeout() {
+		switch (this.stage) {
+			case GameState.STAGE_CONNECTIONS: {
+				return (this.game.meta.connectionsTimeLimit != undefined) ?
+					this.game.meta.connectionsTimeLimit : CONNECTIONS_TIMEOUT;
+			}
+			case GameState.STAGE_SEQUENCES: {
+				return (this.game.meta.sequencesTimeLimit != undefined) ?
+					this.game.meta.sequencesTimeLimit : CONNECTIONS_TIMEOUT;
+			}
+			case GameState.STAGE_WALL: {
+				return (this.game.meta.wallsTimeLimit != undefined) ?
+					this.game.meta.wallsTimeLimit : WALL_TIMEOUT;
+			}
+			case GameState.STAGE_VOWELS: {
+				return (this.game.meta.vowelsTimeLimit != undefined) ?
+					this.game.meta.vowelsTimeLimit : VOWELS_TIMEOUT;
+			}
+			default: {
+				throw new Error(`unrecognized stage ${this.stage}`);
+			}
+		}
+	}
 	getResetTimer() {
-		const timeout =
-			this.isConnectionsTypeStage() ? CONNECTIONS_TIMEOUT
-			: (this.stage == GameState.STAGE_WALL) ? WALL_TIMEOUT
-			: VOWELS_TIMEOUT;
+		const timeout = this.getTimeout();
 		return update(this, {
 			timer: { $set: new TimerUI(timeout) }
 		});
@@ -181,10 +201,7 @@ class GameState {
 		const chosen = this.chosen.slice(0);
 		if (!this.chosen.includes(puzzleIndex))
 			chosen.push(puzzleIndex);
-		const timeout =
-			(this.stage == GameState.STAGE_VOWELS) ? VOWELS_TIMEOUT
-			: (this.stage == GameState.STAGE_WALL) ? WALL_TIMEOUT
-			: CONNECTIONS_TIMEOUT;
+		const timeout = this.getTimeout();
 		return update(this.getResetMicro(timeout).getStartTimer(), {
 			substage: { $set: substage },
 			puzzleIndex: { $set: puzzleIndex },
@@ -388,7 +405,9 @@ class GameState {
 			return this;
 		if (this.wall.strikes == 3)
 			return this;
-		if (this.timer.isExpired())
+		// If timeout is zero, then there is no time limit.
+		// Allow players to make selections indefinitely.
+		if (this.getTimeout() != 0 && this.timer.isExpired())
 			return this;
 		const selected = this.wall.selected.slice(0);
 		const arrPos = selected.indexOf(index);

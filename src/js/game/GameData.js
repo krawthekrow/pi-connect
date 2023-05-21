@@ -85,11 +85,11 @@ export default class GameData {
 			new WallData(innerJson));
 		this.vowels = jsonData.vowels.map((innerJson) =>
 			new VowelsData(innerJson));
-    if (!this.meta.disableShuffleConnections)
-      Util.Shuffle(this.connections);
-    if (!this.meta.disableShuffleSequences)
-      Util.Shuffle(this.sequences);
-    if (!this.meta.disableShuffleWalls)
-      Util.Shuffle(this.walls);
+		if (!this.meta.disableShuffleConnections)
+			Util.Shuffle(this.connections);
+		if (!this.meta.disableShuffleSequences)
+			Util.Shuffle(this.sequences);
+		if (!this.meta.disableShuffleWalls)
+			Util.Shuffle(this.walls);
 	}
 }
