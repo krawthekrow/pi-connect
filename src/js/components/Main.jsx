@@ -366,11 +366,16 @@ class GameUI extends Component {
 			: (stage == GameState.STAGE_WALL) ? 'Wall'
 			: '';
 		const isActive = timer.isRunning();
+		const numPanelChoices = (
+			stage == GameState.STAGE_CONNECTIONS ?
+				((game.game.meta.connectionsCount != undefined) ? game.game.meta.connectionsCount : 6)
+			: stage == GameState.STAGE_SEQUENCES ?
+				((game.game.meta.sequencesCount != undefined) ? game.game.meta.sequencesCount : 6)
+			: ((game.game.meta.wallsCount != undefined) ? game.game.meta.wallsCount : 2)
+		);
 		const panel =
 			(substage == GameState.SUBSTAGE_CHOOSE) ?
-				<ChoosePanel numChoices={
-					(stage == GameState.STAGE_WALL) ? 2 : 6
-				} chosen={game.chosen} header={chooseHeader} onClick={this.handleChooseClick} />
+				<ChoosePanel numChoices={numPanelChoices} chosen={game.chosen} header={chooseHeader} onClick={this.handleChooseClick} />
 			: (stage == GameState.STAGE_WALL) ?
 				<WallPanel data={game.game.walls[game.puzzleIndex]} index={game.clueIndex} progressVal={progressVal} isRevealed={game.isRevealed} strikes={game.wall.strikes} lifeToken={game.game.meta.wallLifeToken} selected={game.wall.selected} found={game.wall.found} onClick={this.handleWallClick} />
 			: (this.state.game.isConnectionsTypeStage()) ?
