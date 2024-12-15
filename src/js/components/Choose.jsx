@@ -21,6 +21,12 @@ const ChoosePanel = (props) => {
 				e.target.blur();
 				props.onClick(index);
 			};
+
+			let hieroglyphIndex = index % ChoosePanel.HIEROGLYPHS.length;
+			if (props.numChoices == 2) {
+				hieroglyphIndex = (i == 0 ? 1 : 4);
+			}
+
 			row.push(
 				<div key={j} className="col p-0 m-1" style={{maxWidth: (numColumns == 3 ? 'calc(33% - .5rem)' : undefined)}}>
 					<button
@@ -33,7 +39,7 @@ const ChoosePanel = (props) => {
 						<h1 style={{
 							fontSize: '100px',
 							fontFamily: 'Gardiner'
-						}}>{ChoosePanel.HIEROGLYPHS[index % ChoosePanel.HIEROGLYPHS.length]}</h1>
+						}}>{ChoosePanel.HIEROGLYPHS[hieroglyphIndex]}</h1>
 					</button>
 				</div>
 			);
